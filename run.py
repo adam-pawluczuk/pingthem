@@ -2,11 +2,18 @@ import argparse
 import asyncio
 import concurrent
 import ipaddress
+import logging
 import socket
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
 import aioping
+
+
+FORMAT = '[%(asctime)-15s] %(levelname)s %(name)s %(message)s'
+logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+LOGGER = logging.getLogger("pingthem")
+logging.getLogger('aioping').setLevel(logging.WARNING)
 
 
 def parse_addresses(network: str) -> Iterator[ipaddress.IPv4Address]:
@@ -26,11 +33,11 @@ def parse_addresses(network: str) -> Iterator[ipaddress.IPv4Address]:
 async def do_ping(sem: asyncio.Semaphore, host: str, timeout: int):
     await sem.acquire()
     try:
-        print(f"Pinging {host}...")
+        LOGGER.info(f"Pinging {host}...")
         delay = await aioping.ping(host, timeout, socket.AddressFamily.AF_INET) * 1000
-        print(f"Ping {host}: {delay:.2f}")
+        LOGGER.info(f"Ping {host}: {delay:.2f}")
     except TimeoutError:
-        print("Timed out")
+        LOGGER.warning(f"Pinging {host} timed out after {timeout}s.")
     finally:
         sem.release()
 
@@ -53,7 +60,7 @@ async def main(network: str, concurrency_level: int, timeout: int):
         tasks.append(task)
 
     results = await asyncio.gather(*tasks)
-    print('Done running the tasks')
+    LOGGER.info('Done running the tasks')
 
 
 if __name__ == "__main__":
