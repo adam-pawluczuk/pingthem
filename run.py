@@ -59,8 +59,11 @@ async def main(network: str, concurrency_level: int, timeout: int):
         Args:
         network (str): The network as a string
     """
-    parsed_ips = parse_addresses(network)
-    import pdb; pdb.set_trace()
+    try:
+        parsed_ips = parse_addresses(network)
+    except (ipaddress.AddressValueError, ipaddress.NetmaskValueError):
+        LOGGER.error("Bad network provided. Refer to the script help for the examples.")
+        return
 
     LOGGER.info(f"About to ping {ipaddress.IPv4Network(network).num_addresses} IP addresses.")
     sem = asyncio.Semaphore(concurrency_level)
