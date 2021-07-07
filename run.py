@@ -10,9 +10,11 @@ from typing import Iterator
 import aioping
 
 
+# Configure the logging module
 FORMAT = '[%(asctime)-15s] %(levelname)s %(name)s %(message)s'
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 LOGGER = logging.getLogger("pingthem")
+# Don't want to see aioping logs
 logging.getLogger('aioping').setLevel(logging.WARNING)
 
 
@@ -31,6 +33,15 @@ def parse_addresses(network: str) -> Iterator[ipaddress.IPv4Address]:
 
 
 async def do_ping(sem: asyncio.Semaphore, host: str, timeout: int):
+    """ Pings given IP address.
+
+    Args:
+        host (str): IP address, e.g.
+            - 192.168.1.1
+
+    Returns:
+        None
+    """
     await sem.acquire()
     try:
         LOGGER.info(f"Pinging {host}...")
@@ -49,8 +60,9 @@ async def main(network: str, concurrency_level: int, timeout: int):
         network (str): The network as a string
     """
     parsed_ips = parse_addresses(network)
+    import pdb; pdb.set_trace()
 
-    print(f"About to ping {ipaddress.IPv4Network(network).num_addresses} IP addresses.")
+    LOGGER.info(f"About to ping {ipaddress.IPv4Network(network).num_addresses} IP addresses.")
     sem = asyncio.Semaphore(concurrency_level)
     loop = asyncio.get_event_loop()
 
