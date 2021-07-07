@@ -1,7 +1,12 @@
 import argparse
+import asyncio
+import concurrent
+import ipaddress
+import socket
+from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
-import ipaddress
+import aioping
 
 
 def parse_addresses(network: str) -> Iterator[ipaddress.IPv4Address]:
@@ -18,12 +23,37 @@ def parse_addresses(network: str) -> Iterator[ipaddress.IPv4Address]:
     return ipaddress.IPv4Network(network).hosts()
 
 
-def main(network: str, concurrency_level: int, timeout: int):
+async def do_ping(sem: asyncio.Semaphore, host: str, timeout: int):
+    await sem.acquire()
+    try:
+        print(f"Pinging {host}...")
+        delay = await aioping.ping(host, timeout, socket.AddressFamily.AF_INET) * 1000
+        print(f"Ping {host}: {delay:.2f}")
+    except TimeoutError:
+        print("Timed out")
+    finally:
+        sem.release()
+
+
+async def main(network: str, concurrency_level: int, timeout: int):
     """ Main function.
 
         Args:
         network (str): The network as a string
     """
+    parsed_ips = parse_addresses(network)
+
+    print(f"About to ping {ipaddress.IPv4Network(network).num_addresses} IP addresses.")
+    sem = asyncio.Semaphore(concurrency_level)
+    loop = asyncio.get_event_loop()
+
+    tasks = []
+    for ip in parsed_ips:
+        task = loop.create_task(do_ping(sem, str(ip), timeout))
+        tasks.append(task)
+
+    results = await asyncio.gather(*tasks)
+    print('Done running the tasks')
 
 
 if __name__ == "__main__":
@@ -38,4 +68,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
 
-    main(network=args.network, concurrency_level=args.concurrency_level, timeout=args.timeout)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(network=args.network, concurrency_level=args.concurrency_level, timeout=args.timeout))
