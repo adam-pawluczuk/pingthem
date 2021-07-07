@@ -86,9 +86,7 @@ if __name__ == "__main__":
                         help="Number of concurrent hosts that are pinged at the same time")
     parser.add_argument("-t", "--timeout", type=int, default=5,
                         help="The number of seconds after giving up on pinging a host (default 5s)")
-
     args = parser.parse_args()
-    print(args)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main(network=args.network, concurrency_level=args.concurrency_level, timeout=args.timeout))
