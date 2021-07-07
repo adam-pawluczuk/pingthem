@@ -46,7 +46,7 @@ async def do_ping(sem: asyncio.Semaphore, host: str, timeout: int):
     try:
         LOGGER.info(f"Pinging {host}...")
         delay = await aioping.ping(host, timeout, socket.AddressFamily.AF_INET) * 1000
-        LOGGER.info(f"Ping {host}: {delay:.2f}")
+        LOGGER.info(f"Ping {host}: time={delay:.2f}ms")
     except TimeoutError:
         LOGGER.warning(f"Pinging {host} timed out after {timeout}s.")
     finally:
